@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "185815014371",
+    "project_id": "trashtagger-new",
+    "storage_bucket": "trashtagger-new.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:185815014371:android:5ebf9b87842bf3273b5ed6",
+        "android_client_info": {
+          "package_name": "com.example.trashtagger"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDffLWtH11q-Tk9RsYsRFDihAGhl4P1Y0U"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
