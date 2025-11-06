@@ -1,3 +1,4 @@
+//lib/core/services/location_service.dart
 import 'package:location/location.dart';
 
 class LocationService {

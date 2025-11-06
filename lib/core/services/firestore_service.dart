@@ -1,4 +1,5 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:trashtagger/core/models/report_pin_data.dart';
 
 class FirestoreService {
   final FirebaseFirestore _db = FirebaseFirestore.instance;
@@ -18,12 +19,10 @@ class FirestoreService {
         'username': username,
         'email': email,
         'role': role,
-        'createdAt':
-            FieldValue.serverTimestamp(), // Good practice to have a timestamp
+        'createdAt': FieldValue.serverTimestamp(),
       });
     } catch (e) {
       print("Error saving user: $e");
-      // Optionally, rethrow the error to handle it in the UI
       rethrow;
     }
   }
@@ -42,7 +41,7 @@ class FirestoreService {
     }
   }
 
-  // --- Report Operations (You will use these later) ---
+  // --- Report Operations ---
 
   /// Fetches a real-time stream of all reports for the main feed.
   /// Reports are ordered by creation date, with the newest first.
@@ -51,6 +50,7 @@ class FirestoreService {
         .collection('reports')
         .orderBy('createdAt', descending: true)
         .snapshots();
+    // Your ReportsFeedScreen will map these docs to ReportModel
   }
 
   /// Creates a new report document in the `reports` collection.
@@ -62,39 +62,94 @@ class FirestoreService {
     required String llmDescription,
   }) async {
     try {
-      // Use .add() to let Firestore automatically generate a unique document ID
       await _db.collection('reports').add({
         'reporterId': reporterId,
         'reporterUsername': reporterUsername,
         'beforeImageUrl': beforeImageUrl,
-        'location': location,
+        'location': location, // Storing location
         'llmDescription': llmDescription,
-        'status': 'pending', // The initial status of every new report
-        'createdAt':
-            FieldValue.serverTimestamp(), // Use the server's time for accuracy
-        'afterImageUrl': null, // This will be added later by an NGO
-        'cleanedBy': null, // This will be added later by an NGO
+        'status': 'pending',
+        'createdAt': FieldValue.serverTimestamp(),
+        'afterImageUrl': null,
+        'assignedNgoUid': null, // Standardized field name
+        'completedAt': null, // Standardized field name
       });
     } catch (e) {
       print("Error creating report: $e");
-      // Optionally rethrow the error to be handled by the UI
       rethrow;
     }
   }
 
-  /// Fetches ONLY the location data for all reports to build the heatmap.
-  Future<List<GeoPoint>> getReportLocations() async {
+  /// Fetches data needed for the map pins.
+  Future<List<ReportPinData>> getReportPins() async {
     try {
-      final snapshot = await _db.collection('reports').get();
+      final snapshot = await _db
+          .collection('reports')
+          .where('beforeImageUrl', isNotEqualTo: null)
+          .get();
+
       if (snapshot.docs.isEmpty) {
         return [];
       }
-      return snapshot.docs
-          .map((doc) => doc.data()['location'] as GeoPoint)
-          .toList();
+
+      // Manually map the Firestore doc to your ReportPinData model
+      // This ensures all fields are correctly populated
+      return snapshot.docs.map((doc) {
+        final data = doc.data();
+        return ReportPinData(
+          id: doc.id,
+          // Read from 'location' key (from createReport)
+          geoPoint: data['location'] as GeoPoint,
+          beforeImageUrl: data['beforeImageUrl'] as String,
+          reporterUid: data['reporterId'] as String,
+          status: data['status'] as String,
+          createdAt: (data['createdAt'] as Timestamp).toDate(),
+          // Ensure optional fields are mapped
+          afterImageUrl: data['afterImageUrl'] as String?,
+          assignedNgoUid: data['assignedNgoUid'] as String?,
+          completedAt: data['completedAt'] != null
+              ? (data['completedAt'] as Timestamp).toDate()
+              : null,
+          description: data['llmDescription'] as String?,
+        );
+      }).toList();
     } catch (e) {
-      print("Error fetching report locations: $e");
+      print("Error fetching report pins: $e");
       return [];
     }
   }
+
+  // --- NEW FUNCTION ---
+  /// Atomically updates a report to 'completed' status.
+  /// This single function is used by CompleteReportScreen.
+
+  Future<void> completeReport({
+    required String reportId,
+    required String afterImageUrl,
+    required String ngoId,
+    required String? aiRating, // 1. ADD THIS PARAMETER
+  }) async {
+    try {
+      await _db.collection('reports').doc(reportId).update({
+        'status': 'completed',
+        'afterImageUrl': afterImageUrl,
+        'assignedNgoUid': ngoId,
+        'completedAt': FieldValue.serverTimestamp(),
+        'aiRating': aiRating, // 2. SAVE THE RATING
+      });
+    } catch (e) {
+      print('Error completing report: $e');
+      rethrow;
+    }
+  }
+
+  //
+  // --- DEPRECATED FUNCTIONS ---
+  // The functions below are no longer needed as their logic is
+  // combined into the `completeReport` function above.
+  //
+  // Future<void> updateReportStatus(String reportId, String newStatus) async { ... }
+  // Future<void> updateReportCompletedAt(String reportId, Timestamp completedAt) async { ... }
+  // Future<void> updateReportAfterImage(String reportId, String imageUrl) async { ... }
+  //
 }

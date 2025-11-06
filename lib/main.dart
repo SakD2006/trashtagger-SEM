@@ -5,6 +5,9 @@ import 'package:trashtagger/core/services/auth_service.dart';
 import 'package:trashtagger/core/shared_widgets/home_screen.dart';
 import 'package:trashtagger/features/0_auth/screens/login_screen.dart'; // Your login screen
 import 'firebase_options.dart';
+import 'package:trashtagger/utils/theme.dart';
+import 'package:trashtagger/utils/routes.dart';
+import 'package:trashtagger/utils/constants.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -18,8 +21,11 @@ class MyApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      title: 'Trashtagger',
-      home: AuthGate(), // Use a gate to check auth state
+      title: appName,
+      theme: appTheme,
+      debugShowCheckedModeBanner: false,
+      initialRoute: '/',
+      routes: routes,
     );
   }
 }
