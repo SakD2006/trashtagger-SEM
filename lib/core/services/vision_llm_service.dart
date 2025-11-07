@@ -3,7 +3,7 @@ import 'dart:convert'; // Required for jsonEncode and base64Encode
 import 'package:http/http.dart' as http; // Required for API calls
 
 class VisionLlmService {
-  final String _apiKey = '';
+  final String _apiKey = String.fromEnvironment('GROQ_API', defaultValue: "");
 
   final String _groqApiUrl = "https://api.groq.com/openai/v1/chat/completions";
   final String _visionModel = "meta-llama/llama-4-scout-17b-16e-instruct";
